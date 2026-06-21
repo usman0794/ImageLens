@@ -42,6 +42,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/")
+async def read_root():
+    return {"message": "ImageLens API running"}
+
+
 app.include_router(
     health_router,
     prefix=settings.API_PREFIX

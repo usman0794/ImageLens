@@ -1,25 +1,36 @@
 from app.config.settings import settings
 from app.core.storage_service import LocalStorageService, S3StorageService
-
-from app.core.clip_encoder import CLIPEncoder
-from app.core.faiss_store import FAISSStore
 from app.repositories.image_repository import ImageRepository
 from app.services.image_service import ImageService
 
 # -----------------------------
-# Singleton AI Components
+# Lazy Singleton AI Components
 # -----------------------------
+# IMPORTANT: torch / transformers / faiss are heavy. We do NOT import them at
+# module load and we do NOT build the model at import time. Instead we build the
+# singletons on first use. This lets the web process boot and bind its port
+# immediately (so Render detects an open port), and keeps idle memory low.
 
-clip_encoder = CLIPEncoder()
-faiss_store = FAISSStore()
+_clip_encoder = None
+_faiss_store = None
 
 
 def get_clip_encoder():
-    return clip_encoder
+    global _clip_encoder
+    if _clip_encoder is None:
+        # Import here so transformers/torch are only loaded on first real use.
+        from app.core.clip_encoder import CLIPEncoder
+        _clip_encoder = CLIPEncoder()
+    return _clip_encoder
 
 
 def get_faiss_store():
-    return faiss_store
+    global _faiss_store
+    if _faiss_store is None:
+        # Import here so faiss is only loaded on first real use.
+        from app.core.faiss_store import FAISSStore
+        _faiss_store = FAISSStore()
+    return _faiss_store
 
 # -----------------------------
 # Storage Service
@@ -43,9 +54,13 @@ def get_storage_service():
 # Image Service
 # -----------------------------
 
+
 def get_image_service() -> ImageService:
     """
     Create ImageService with required dependencies.
+
+    The CLIP encoder and FAISS store are resolved lazily, so hitting a route
+    that needs them is what triggers model loading — not server startup.
     """
 
     storage_service = get_storage_service()
@@ -58,5 +73,5 @@ def get_image_service() -> ImageService:
         storage_service=storage_service,
         image_repository=image_repository,
         clip_encoder=clip_encoder,
-        vector_store=faiss_store
+        vector_store=faiss_store,
     )
