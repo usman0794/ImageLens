@@ -12,8 +12,9 @@ import { searchByImage, searchByText } from "./api/imageLensApi";
 const defaultFilters = {
   category: "all",
   source: "all",
-  minSimilarity: 0.5,
+  minSimilarity: 0.6,
   sortBy: "relevance",
+  maxResults: 6,
 };
 
 function App() {
@@ -74,7 +75,8 @@ function App() {
         if (filters.sortBy === "name")
           return a.filename.localeCompare(b.filename);
         return (b.score || 0) - (a.score || 0);
-      });
+      })
+      .slice(0, filters.maxResults);
   }, [filters, results]);
 
   const appState = {
