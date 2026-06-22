@@ -14,7 +14,11 @@ QDRANT_API_KEY set):
 """
 
 import requests
+
+from dotenv import load_dotenv
 from pymongo import MongoClient
+
+load_dotenv()
 
 from app.config.settings import settings
 from app.core.clip_encoder import CLIPEncoder

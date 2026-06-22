@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from app.config.settings import settings
+
 router = APIRouter(prefix="/health", tags=["Health"])
 
 
@@ -15,5 +17,5 @@ async def health_check():
         "success": True,
         "message": "ImageLens backend is running",
         "model_loaded": False,
-        "vector_store": "faiss",
+        "vector_store": settings.VECTOR_STORE,
     }
