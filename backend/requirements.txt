@@ -14,15 +14,13 @@ dnspython==2.8.0
 # ===== AWS S3 =====
 boto3==1.43.31
 
-# ===== Vector search + image handling =====
-faiss-cpu==1.14.3
-# numpy and pillow are intentionally UNPINNED: fastembed requires pillow<12,
-# so pinning exact versions breaks dependency resolution. Let pip pick a
-# compatible set (fastembed will pull Pillow 11.x and a matching numpy).
+# ===== Vector database (Qdrant Cloud) + image handling =====
+# FAISS removed: vectors now live in Qdrant Cloud (persistent), so the index
+# survives Render restarts/redeploys.
+qdrant-client
 numpy
 pillow
 
-# ===== CLIP via ONNX (replaces torch/torchvision/transformers) =====
-# Pinned to avoid long pip backtracking on Render. 0.7.3 supports Python 3.12
-# and allows pillow>=10.3,<12.
-fastembed==0.7.3
+# ===== Remote CLIP service (HF Space) =====
+# CLIP runs on a separate Hugging Face Space; the backend only makes HTTP calls.
+requests

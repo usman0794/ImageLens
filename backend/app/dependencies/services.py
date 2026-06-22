@@ -6,31 +6,35 @@ from app.services.image_service import ImageService
 # -----------------------------
 # Lazy Singleton AI Components
 # -----------------------------
-# IMPORTANT: torch / transformers / faiss are heavy. We do NOT import them at
-# module load and we do NOT build the model at import time. Instead we build the
-# singletons on first use. This lets the web process boot and bind its port
-# immediately (so Render detects an open port), and keeps idle memory low.
+# The CLIP encoder (remote HF Space client) and the vector store (Qdrant Cloud)
+# are built on first use, not at import time. This lets the web process boot and
+# bind its port immediately, and keeps idle memory low.
 
 _clip_encoder = None
-_faiss_store = None
+_vector_store = None
 
 
 def get_clip_encoder():
     global _clip_encoder
     if _clip_encoder is None:
-        # Import here so transformers/torch are only loaded on first real use.
         from app.core.clip_encoder import CLIPEncoder
+
         _clip_encoder = CLIPEncoder()
     return _clip_encoder
 
 
-def get_faiss_store():
-    global _faiss_store
-    if _faiss_store is None:
-        # Import here so faiss is only loaded on first real use.
-        from app.core.faiss_store import FAISSStore
-        _faiss_store = FAISSStore()
-    return _faiss_store
+def get_vector_store():
+    global _vector_store
+    if _vector_store is None:
+        # Qdrant Cloud is a persistent external service, so the index survives
+        # Render restarts and redeploys.
+        from app.core.qdrant_store import QdrantStore
+
+        _vector_store = QdrantStore(
+            dimension=512,
+            collection_name=settings.QDRANT_COLLECTION,
+        )
+    return _vector_store
 
 # -----------------------------
 # Storage Service
@@ -59,19 +63,19 @@ def get_image_service() -> ImageService:
     """
     Create ImageService with required dependencies.
 
-    The CLIP encoder and FAISS store are resolved lazily, so hitting a route
-    that needs them is what triggers model loading — not server startup.
+    The CLIP encoder and vector store are resolved lazily, so hitting a route
+    that needs them is what triggers their initialization — not server startup.
     """
 
     storage_service = get_storage_service()
     image_repository = ImageRepository()
 
     clip_encoder = get_clip_encoder()
-    faiss_store = get_faiss_store()
+    vector_store = get_vector_store()
 
     return ImageService(
         storage_service=storage_service,
         image_repository=image_repository,
         clip_encoder=clip_encoder,
-        vector_store=faiss_store,
+        vector_store=vector_store,
     )

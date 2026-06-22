@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     AWS_REGION: str | None = None
     AWS_S3_BUCKET_NAME: str | None = None
 
+
+    # ===== Qdrant Cloud (vector database) =====
+    QDRANT_URL: str | None = None
+    QDRANT_API_KEY: str | None = None
+    QDRANT_COLLECTION: str = "images"
+
     class Config:
         env_file = ".env"
 
